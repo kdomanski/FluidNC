@@ -16,6 +16,7 @@
 #    include <WebSocketsServer.h>
 #    include <WiFi.h>
 #    include <WebServer.h>
+#    include <detail/mimetable.h>
 #    include <ESP32SSDP.h>
 #    include <StreamString.h>
 #    include <Update.h>
@@ -45,6 +46,15 @@ namespace WebUI {
 #    include "NoFile.h"
 
 namespace WebUI {
+    enum WebserverRootFS {
+        WebserverRootFSFlash = 0,
+        WebserverRootFSSD,
+    };
+
+    enum_opt_t webserverRootFSOptions = {
+        { "Flash", WebserverRootFSFlash },
+        { "SD", WebserverRootFSSD },
+    };
 
     // Error codes for upload
     const int ESP_ERROR_AUTHENTICATION   = 1;
@@ -73,11 +83,13 @@ namespace WebUI {
     FileStream* Web_Server::_uploadFile = nullptr;
 
     EnumSetting* http_enable;
+    EnumSetting* http_rootfs;
     IntSetting*  http_port;
 
     Web_Server::Web_Server() {
         http_port   = new IntSetting("HTTP Port", WEBSET, WA, "ESP121", "HTTP/Port", DEFAULT_HTTP_PORT, MIN_HTTP_PORT, MAX_HTTP_PORT, NULL);
         http_enable = new EnumSetting("HTTP Enable", WEBSET, WA, "ESP120", "HTTP/Enable", DEFAULT_HTTP_STATE, &onoffOptions, NULL);
+        http_rootfs = new EnumSetting("Webserver root FS", WEBSET, WA, NULL, "HTTP/RootFS", WebserverRootFSFlash, &webserverRootFSOptions, NULL);
     }
     Web_Server::~Web_Server() { end(); }
 
@@ -307,7 +319,15 @@ namespace WebUI {
         }
 
         if (!(_webserver->hasArg("forcefallback") && _webserver->arg("forcefallback") == "yes")) {
-            if (streamFile("/index.html")) {
+            const char *fs = (http_rootfs->get() == WebserverRootFSFlash) ? localfsName : sdName;
+            std::error_code ec;
+            FluidPath fpath { "index.html", fs, ec };
+            if (ec) {
+                String message(ec.message().c_str());
+                _webserver->send(500, String(F(mime::mimeTable[mime::none].mimeType)), message);
+            }
+
+            if (streamFile(fpath, false)) {
                 return;
             }
         }
