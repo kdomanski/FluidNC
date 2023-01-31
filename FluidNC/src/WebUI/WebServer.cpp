@@ -136,11 +136,6 @@ namespace WebUI {
         _socket_server->begin();
         _socket_server->onEvent(handle_Websocket_Event);
 
-        //events functions
-        //_web_events->onConnect(handle_onevent_connect);
-        //events management
-        // _webserver->addHandler(_web_events);
-
         //Web server handlers
         //trick to catch command line on "/" before file being processed
         _webserver->on("/", HTTP_ANY, handle_root);
