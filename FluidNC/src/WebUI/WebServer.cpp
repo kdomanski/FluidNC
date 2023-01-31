@@ -229,14 +229,21 @@ namespace WebUI {
 #    endif
     }
 
+    bool Web_Server::streamFile(const String &path, bool download) {
+        FluidPath fpath(path, "");
+        return streamFile(fpath, download);
+    }
+
     // Send a file, either the specified path or path.gz
-    bool Web_Server::streamFile(String path, bool download) {
+    bool Web_Server::streamFile(const FluidPath &path, bool download) {
         FileStream* file;
         try {
-            file = new FileStream(path, "r", "");
+            file = new FileStream(path, "r");
         } catch (const Error err) {
             try {
-                file = new FileStream(path + ".gz", "r", "");
+                FluidPath gzipPath(path);
+                gzipPath += ".gz";
+                file = new FileStream(gzipPath, "r");
             } catch (const Error err) { return false; }
         }
         if (download) {
@@ -1154,36 +1161,36 @@ namespace WebUI {
 
     //helper to extract content type from file extension
     //Check what is the content tye according extension file
-    String Web_Server::getContentType(String filename) {
-        String file_name = filename;
-        file_name.toLowerCase();
-        if (filename.endsWith(".htm")) {
+    String Web_Server::getContentType(const FluidPath &path) {
+        String extension = path.extension().c_str();
+        extension.toLowerCase();
+        if (extension.endsWith(".htm")) {
             return "text/html";
-        } else if (file_name.endsWith(".html")) {
+        } else if (extension.endsWith(".html")) {
             return "text/html";
-        } else if (file_name.endsWith(".css")) {
+        } else if (extension.endsWith(".css")) {
             return "text/css";
-        } else if (file_name.endsWith(".js")) {
+        } else if (extension.endsWith(".js")) {
             return "application/javascript";
-        } else if (file_name.endsWith(".png")) {
+        } else if (extension.endsWith(".png")) {
             return "image/png";
-        } else if (file_name.endsWith(".gif")) {
+        } else if (extension.endsWith(".gif")) {
             return "image/gif";
-        } else if (file_name.endsWith(".jpeg")) {
+        } else if (extension.endsWith(".jpeg")) {
             return "image/jpeg";
-        } else if (file_name.endsWith(".jpg")) {
+        } else if (extension.endsWith(".jpg")) {
             return "image/jpeg";
-        } else if (file_name.endsWith(".ico")) {
+        } else if (extension.endsWith(".ico")) {
             return "image/x-icon";
-        } else if (file_name.endsWith(".xml")) {
+        } else if (extension.endsWith(".xml")) {
             return "text/xml";
-        } else if (file_name.endsWith(".pdf")) {
+        } else if (extension.endsWith(".pdf")) {
             return "application/x-pdf";
-        } else if (file_name.endsWith(".zip")) {
+        } else if (extension.endsWith(".zip")) {
             return "application/x-zip";
-        } else if (file_name.endsWith(".gz")) {
+        } else if (extension.endsWith(".gz")) {
             return "application/x-gzip";
-        } else if (file_name.endsWith(".txt")) {
+        } else if (extension.endsWith(".txt")) {
             return "text/plain";
         }
         return "application/octet-stream";
